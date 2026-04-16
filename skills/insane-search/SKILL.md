@@ -1,19 +1,18 @@
 ---
 name: insane-search
 description: >
-  WebFetch가 차단되거나 실패할 때, 또는 X/Twitter, Reddit, YouTube, GitHub,
-  Mastodon, Medium, Substack, Stack Overflow, Threads, 네이버 등
-  플랫폼에 접근할 때 사용하는 우회 접근 전략. 1,858개 미디어 사이트(yt-dlp),
-  범용 웹(Jina Reader), 공개 API(HN, Bluesky, arXiv 등)를 활용한다.
-  트위터/X 못 열어, 레딧 안 읽혀, 유튜브 자막 뽑아줘, 깃헙 검색, 사이트 차단됨,
-  스레드 안 열려, 마스토돈, 미디엄, 서브스택, 스택오버플로우, 네이버 블로그,
-  디시인사이드, 에펨코리아, 요즘IT, 긱뉴스, 클리앙, 쿠팡, 링크드인, 당근마켓,
-  twitter access, reddit blocked, youtube subtitles, github search, arxiv papers,
-  threads, mastodon, medium, substack, stackoverflow, naver blog, dcinside, fmkorea,
-  coupang, linkedin, yozm, wishket.
-  Make sure to use this skill whenever WebFetch returns 402/403/blocked,
-  when accessing social media or developer platforms,
-  or when extracting media content (video, audio, subtitles).
+  Auto-bypass for blocked websites — tries every method until one works.
+  Use when WebFetch returns 402/403/blocked, or when accessing X/Twitter, Reddit,
+  YouTube, GitHub, Mastodon, Medium, Substack, Stack Overflow, Threads, Naver,
+  Coupang, LinkedIn, or any platform with WAF/bot protection. Leverages yt-dlp
+  (1,858 media sites), Jina Reader, public APIs (HN, Bluesky, arXiv), and
+  curl_cffi TLS impersonation (auto-installed) with Playwright MCP fallback.
+  Korean triggers: 트위터/X 못 열어, 레딧 안 읽혀, 유튜브 자막 뽑아줘, 깃헙 검색,
+  사이트 차단됨, 스레드 안 열려, 마스토돈, 미디엄, 서브스택, 스택오버플로우,
+  네이버 블로그, 디시인사이드, 에펨코리아, 요즘IT, 긱뉴스, 클리앙, 쿠팡, 링크드인,
+  당근마켓. English triggers: twitter access, reddit blocked, youtube subtitles,
+  github search, arxiv papers, threads, mastodon, medium, substack, stackoverflow,
+  naver blog, dcinside, fmkorea, coupang, linkedin, yozm, wishket.
   Do NOT trigger for simple web searches that WebSearch can handle directly.
 ---
 
