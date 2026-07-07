@@ -161,7 +161,7 @@ def _run_python_patchright(
         return 1, "", f"patchright: {type(e).__name__}: {e}"
 
 
-def _run_python_camoufox(
+def _run_python_firefox(
     url: str,
     *,
     profile_dir: str = "",
@@ -169,28 +169,29 @@ def _run_python_camoufox(
     timeout: int = 90,
     headless: bool = True,
 ) -> tuple[int, str, str]:
-    """Fetch a URL using Camoufox (hardened Firefox — no CDP surface, different detection profile).
+    """Fetch a URL using Playwright Firefox — different browser engine, different detection surface.
 
     Falls back to this when Chromium-based Patchright is detected/blocked.
-    Camoufox is a Firefox fork with built-in stealth: navigator.webdriver,
-    plugins, WebGL, canvas fingerprinting all patched at the binary level.
+    Firefox has no CDP surface, different TLS (NSS), different JS engine (SpiderMonkey).
+    No extra install — uses Playwright's built-in Firefox.
     """
     try:
-        from camoufox import NewBrowser, AsyncNewBrowser
+        from patchright.sync_api import sync_playwright
     except ImportError:
-        return 127, "", "camoufox not installed (pip install camoufox && camoufox fetch)"
+        return 127, "", "patchright not installed"
 
     t0 = time.time()
     deadline = t0 + timeout
 
     try:
-        # Camoufox sync API: NewBrowser is a context manager
-        with NewBrowser(
-            headless=headless,
-            humanize=True,  # built-in stealth + human-like behavior
-            geoip=True,    # match timezone to IP
-        ) as browser:
-            page = browser.new_page()
+        with sync_playwright() as p:
+            pd = profile_dir or tempfile.mkdtemp(prefix="insane_ff_")
+            ctx = p.firefox.launch_persistent_context(
+                pd,
+                headless=headless,
+                viewport={"width": 1366, "height": 900},
+            )
+            page = ctx.new_page()
 
             try:
                 from urllib.parse import urlparse
@@ -217,9 +218,10 @@ def _run_python_camoufox(
                 page.wait_for_timeout(2000)
 
             html = page.content()
+            ctx.close()
             return 0, html, ""
     except Exception as e:
-        return 1, "", f"camoufox: {type(e).__name__}: {e}"
+        return 1, "", f"firefox: {type(e).__name__}: {e}"
 
 
 class _FakeResp:
@@ -307,10 +309,9 @@ def run_playwright_fallback(
                 att.reasons = list(vr.reasons)
                 return att, html
 
-            # Patchright failed — try Camoufox (Firefox, no CDP surface)
+            # Patchright failed — try Firefox (no CDP surface, different TLS/JS engine)
             try:
-                import camoufox  # noqa: F401
-                rc, html, err = _run_python_camoufox(
+                rc, html, err = _run_python_firefox(
                     url,
                     wait_selector=wait_sel,
                     timeout=timeout,
