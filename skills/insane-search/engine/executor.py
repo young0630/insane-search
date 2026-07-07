@@ -75,29 +75,89 @@ def _pick_executor(capabilities: list[str], device_class: str) -> str:
     return "playwright_real_chrome"  # safest general fallback
 
 
-def _run_node_template(template: str, args: dict, timeout: int = 90) -> tuple[int, str, str]:
-    """Run a Node.js template with args as JSON on stdin.
-
-    Template convention: reads `process.stdin` → JSON → runs fetch → writes
-    HTML to stdout; errors go to stderr with non-zero exit code.
-    """
-    path = os.path.join(TEMPLATES_DIR, template)
-    if not os.path.isfile(path):
-        return 127, "", f"template not found: {path}"
+def _run_python_patchright(
+    url: str,
+    *,
+    profile_dir: str = "",
+    wait_selector: Optional[str] = None,
+    timeout: int = 90,
+    headless: bool = False,
+    device: str = "",
+) -> tuple[int, str, str]:
+    """Fetch a URL using Python Patchright with stealth patches."""
     try:
-        proc = subprocess.run(
-            ["node", path],
-            input=json.dumps(args),
-            cwd=TEMPLATES_DIR,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        return proc.returncode, proc.stdout, proc.stderr
-    except subprocess.TimeoutExpired:
-        return 124, "", f"timeout after {timeout}s"
+        import patchright
+        from patchright.sync_api import sync_playwright
+    except ImportError:
+        return 127, "", "patchright not installed (pip install patchright)"
+
+    t0 = time.time()
+    deadline = t0 + timeout
+
+    try:
+        with sync_playwright() as p:
+            ctx_opts = {
+                "channel": "chrome",
+                "headless": headless,
+                "viewport": None,
+            }
+            pd = profile_dir or tempfile.mkdtemp(prefix="insane_pw_")
+            ctx = p.chromium.launch_persistent_context(pd, **ctx_opts)
+            page = ctx.new_page()
+
+            page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            """)
+
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url)
+                root_url = f"{parsed.scheme}://{parsed.netloc}/"
+                if root_url != url:
+                    page.goto(root_url, wait_until="domcontentloaded",
+                              timeout=min(30000, int((deadline - time.time()) * 1000)))
+                    page.wait_for_timeout(3500)
+            except Exception:
+                pass
+
+            rem = max(1000, int((deadline - time.time()) * 1000))
+            resp = page.goto(url, wait_until="domcontentloaded", timeout=rem)
+            page.wait_for_timeout(2500)
+
+            if wait_selector:
+                try:
+                    rem_sel = max(1000, int((deadline - time.time()) * 1000))
+                    page.wait_for_selector(wait_selector, timeout=rem_sel)
+                except Exception:
+                    try:
+                        page.reload(wait_until="domcontentloaded", timeout=rem)
+                        page.wait_for_timeout(2000)
+                        rem_sel = max(1000, int((deadline - time.time()) * 1000))
+                        page.wait_for_selector(wait_selector, timeout=rem_sel)
+                    except Exception:
+                        pass
+            else:
+                page.wait_for_timeout(2000)
+
+            html = page.content()
+            cookies = ctx.cookies()
+
+            try:
+                from .transport import POOL, pool_enabled, _host_of
+                if pool_enabled() and cookies:
+                    ua = page.evaluate("() => navigator.userAgent")
+                    cookie_list = [{"name": c["name"], "value": c["value"],
+                                    "domain": c.get("domain", "")} for c in cookies]
+                    POOL.inject_cookies(_host_of(url), "chrome", cookie_list, user_agent=ua)
+            except Exception:
+                pass
+
+            ctx.close()
+            return 0, html, ""
     except Exception as e:
-        return 1, "", f"{type(e).__name__}:{e}"
+        return 1, "", f"patchright: {type(e).__name__}: {e}"
 
 
 class _FakeResp:
@@ -162,6 +222,35 @@ def run_playwright_fallback(
         att.elapsed_s = round(time.time() - t0, 3)
         return att, ""
 
+    # Python Patchright path (preferred — no Node.js dependency)
+    if choice in ("playwright_real_chrome", "playwright_mobile_chrome"):
+        try:
+            import patchright  # noqa: F401
+            pd = profile_dir or _profile_dir_for(url, choice)
+            wait_sel = success_selectors[0] if success_selectors else None
+            dev = "iPhone 13 Pro" if choice == "playwright_mobile_chrome" else ""
+            rc, html, err = _run_python_patchright(
+                url,
+                profile_dir=pd,
+                wait_selector=wait_sel,
+                timeout=timeout,
+                device=dev,
+            )
+            if rc == 0 and html:
+                resp = _FakeResp(html, status=200, final_url=url)
+                vr = validate(resp, success_selectors=success_selectors)
+                att.status = 200
+                att.body_size = len(html)
+                att.verdict = vr.verdict.value
+                att.reasons = list(vr.reasons)
+                return att, html
+            # Python path failed — fall through to Node template
+        except ImportError:
+            pass  # No patchright, fall through to Node
+        except Exception:
+            pass  # Any other error, fall through to Node
+
+    # Node.js template path (fallback)
     if not _chrome_channel_available():
         att.error = "node/npx not available for local Playwright template"
         att.verdict = Verdict.UNKNOWN.value
