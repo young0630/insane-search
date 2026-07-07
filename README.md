@@ -21,6 +21,25 @@ A resilient public-page reader for **any AI agent** — Hermes, Codex, Claude Co
 
 </div>
 
+## 🧬 Adversarial Fingerprint Evolution (exclusive to this fork)
+
+Every request gets a **different browser fingerprint** — viewport shifts by ±1-3px,
+language order swaps, WebGL vendor varies, device pixel ratio fluctuates.
+
+**Why**: Fixed fingerprint reuse is the single largest detection signal (Sentinel 2026).
+Anti-detect browsers solve this with pre-built static profiles. This fork **evolves
+fingerprints dynamically** per domain — no two requests are identical.
+
+
+
+Successful fingerprints survive and are reused as base templates; failed ones are
+discarded. The mutation rate decreases as a fingerprint proves itself — exploration
+gives way to exploitation over time.
+
+No new dependencies. One new file: `engine/fingerprints.py` (+235 lines).
+
+---
+
 ## What's different from upstream
 
 | | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) | **This fork** |
