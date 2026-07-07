@@ -2,11 +2,11 @@ English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](READM
 
 <div align="center">
 
-# insane-search
+# insane-search + Patchright
 
 **Impossible is nothing. If it's public, insane-search gets in.**
 
-A resilient public-page reader for Claude Code. No API keys, no proxy setup.
+A resilient public-page reader for **any AI agent** — Hermes, Codex, Claude Code. No API keys, no proxy setup.
 
 <p>
   <a href="https://docs.anthropic.com/en/docs/claude-code"><img src="https://img.shields.io/badge/platform-Claude_Code-D97757?logo=claude" alt="Claude Code"></a>
@@ -20,6 +20,19 @@ A resilient public-page reader for Claude Code. No API keys, no proxy setup.
 <img src="assets/hero.png" width="860" alt="Cinematic split: on the left a blocked site shows 403 Forbidden, a CAPTCHA, and a WAF wall; it shatters down the middle as insane-search breaks through on the right, returning a real public post from @claudeai (Claude Code Plugins) with its source — no API key.">
 
 </div>
+
+## What's different from upstream
+
+| | [fivetaku/insane-search](https://github.com/fivetaku/insane-search) | **This fork** |
+|---|---|---|
+| **Phase 3 executor** | Node.js Playwright templates | **Python Patchright** |
+| **Browser** | Bundled Chromium (headless) | **Real Chrome** (headed) |
+| **CDP detection** | standard Playwright leaks | Patchright patches |
+| **Stealth** | Node.js plugin (optional) | Built-in: webdriver/plugins/languages |
+| **Node.js required?** | yes | Python-only path |
+| **Reddit access** | 429/403 blocked | **verified working** (2026-07) |
+
+**One file changed:** `skills/insane-search/engine/executor.py` (+109/-20 lines)
 
 ---
 
