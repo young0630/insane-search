@@ -30,7 +30,9 @@ language order swaps, WebGL vendor varies, device pixel ratio fluctuates.
 Anti-detect browsers solve this with pre-built static profiles. This fork **evolves
 fingerprints dynamically** per domain — no two requests are identical.
 
-
+    Request 1: 1366x900  lang=en-US  vendor=Intel Inc.  dpr=1.0
+    Request 2: 1368x902  lang=en-US  vendor=Intel       dpr=1.0   (viewport)
+    Request 3: 1366x900  lang=en     vendor=Intel Inc.  dpr=0.75  (language)
 
 Successful fingerprints survive and are reused as base templates; failed ones are
 discarded. The mutation rate decreases as a fingerprint proves itself — exploration
