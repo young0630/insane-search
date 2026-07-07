@@ -100,6 +100,7 @@ def _run_python_patchright(
                 "channel": "chrome",
                 "headless": headless,
                 "viewport": None,
+                "args": ["--disable-blink-features=AutomationControlled"],
             }
             pd = profile_dir or tempfile.mkdtemp(prefix="insane_pw_")
             ctx = p.chromium.launch_persistent_context(pd, **ctx_opts)
@@ -158,6 +159,67 @@ def _run_python_patchright(
             return 0, html, ""
     except Exception as e:
         return 1, "", f"patchright: {type(e).__name__}: {e}"
+
+
+def _run_python_camoufox(
+    url: str,
+    *,
+    profile_dir: str = "",
+    wait_selector: Optional[str] = None,
+    timeout: int = 90,
+    headless: bool = True,
+) -> tuple[int, str, str]:
+    """Fetch a URL using Camoufox (hardened Firefox — no CDP surface, different detection profile).
+
+    Falls back to this when Chromium-based Patchright is detected/blocked.
+    Camoufox is a Firefox fork with built-in stealth: navigator.webdriver,
+    plugins, WebGL, canvas fingerprinting all patched at the binary level.
+    """
+    try:
+        from camoufox import NewBrowser, AsyncNewBrowser
+    except ImportError:
+        return 127, "", "camoufox not installed (pip install camoufox && camoufox fetch)"
+
+    t0 = time.time()
+    deadline = t0 + timeout
+
+    try:
+        # Camoufox sync API: NewBrowser is a context manager
+        with NewBrowser(
+            headless=headless,
+            humanize=True,  # built-in stealth + human-like behavior
+            geoip=True,    # match timezone to IP
+        ) as browser:
+            page = browser.new_page()
+
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url)
+                root_url = f"{parsed.scheme}://{parsed.netloc}/"
+                if root_url != url:
+                    page.goto(root_url, wait_until="domcontentloaded",
+                              timeout=min(30000, int((deadline - time.time()) * 1000)))
+                    page.wait_for_timeout(3500)
+            except Exception:
+                pass
+
+            rem = max(5000, int((deadline - time.time()) * 1000))
+            resp = page.goto(url, wait_until="domcontentloaded", timeout=rem)
+            page.wait_for_timeout(2500)
+
+            if wait_selector:
+                try:
+                    rem_sel = max(2000, int((deadline - time.time()) * 1000))
+                    page.wait_for_selector(wait_selector, timeout=rem_sel)
+                except Exception:
+                    pass
+            else:
+                page.wait_for_timeout(2000)
+
+            html = page.content()
+            return 0, html, ""
+    except Exception as e:
+        return 1, "", f"camoufox: {type(e).__name__}: {e}"
 
 
 class _FakeResp:
@@ -244,7 +306,30 @@ def run_playwright_fallback(
                 att.verdict = vr.verdict.value
                 att.reasons = list(vr.reasons)
                 return att, html
-            # Python path failed — fall through to Node template
+
+            # Patchright failed — try Camoufox (Firefox, no CDP surface)
+            try:
+                import camoufox  # noqa: F401
+                rc, html, err = _run_python_camoufox(
+                    url,
+                    wait_selector=wait_sel,
+                    timeout=timeout,
+                    headless=False,
+                )
+                if rc == 0 and html:
+                    resp = _FakeResp(html, status=200, final_url=url)
+                    vr = validate(resp, success_selectors=success_selectors)
+                    att.status = 200
+                    att.body_size = len(html)
+                    att.verdict = vr.verdict.value
+                    att.reasons = list(vr.reasons)
+                    return att, html
+            except ImportError:
+                pass
+            except Exception:
+                pass
+            
+            # Both Python paths failed — fall through to Node template
         except ImportError:
             pass  # No patchright, fall through to Node
         except Exception:
