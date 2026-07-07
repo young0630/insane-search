@@ -2,11 +2,11 @@
 
 <div align="center">
 
-# insane-search
+# insane-search + Patchright
 
 **포기는 배추 셀 때나 쓰는 말. 공개된 페이지라면, insane-search는 결국 뚫어낸다.**
 
-차단에 강한 공개 페이지 리더 — Claude Code용. API 키도, 프록시 설정도 없다.
+차단에 강한 공개 페이지 리더 — **Hermes · Codex · Claude Code**용. API 키도, 프록시 설정도 없다.
 
 <p>
   <a href="https://docs.anthropic.com/en/docs/claude-code"><img src="https://img.shields.io/badge/platform-Claude_Code-D97757?logo=claude" alt="Claude Code"></a>
@@ -26,9 +26,9 @@
 ## ⚡ 설치
 
 ```bash
-/plugin marketplace add https://github.com/fivetaku/gptaku_plugins.git
-/plugin install insane-search@gptaku-plugins
-/reload-plugins
+git clone https://github.com/young0630/insane-search.git
+pip install patchright "curl_cffi>=0.15.0"
+cd insane-search/skills/insane-search && python -m engine "URL"
 ```
 
 외울 명령어는 없다. 평소처럼 Claude Code에게 말하면, fetch가 막히는 순간 insane-search가 알아서 끼어든다.

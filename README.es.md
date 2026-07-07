@@ -2,11 +2,11 @@
 
 <div align="center">
 
-# insane-search
+# insane-search + Patchright
 
 **Impossible is nothing. Si es público, insane-search acaba entrando.**
 
-Un lector de páginas públicas resistente al bloqueo, para Claude Code. Sin claves de API, sin configurar proxies.
+Un lector de páginas públicas resistente al bloqueo, para **Hermes · Codex · Claude Code**. Sin claves de API, sin configurar proxies.
 
 <p>
   <a href="https://docs.anthropic.com/en/docs/claude-code"><img src="https://img.shields.io/badge/platform-Claude_Code-D97757?logo=claude" alt="Claude Code"></a>
@@ -26,9 +26,9 @@ Un lector de páginas públicas resistente al bloqueo, para Claude Code. Sin cla
 ## ⚡ Instalación
 
 ```bash
-/plugin marketplace add https://github.com/fivetaku/gptaku_plugins.git
-/plugin install insane-search@gptaku-plugins
-/reload-plugins
+git clone https://github.com/young0630/insane-search.git
+pip install patchright "curl_cffi>=0.15.0"
+cd insane-search/skills/insane-search && python -m engine "URL"
 ```
 
 No hay comandos que aprender. Habla con Claude Code como siempre: insane-search entra en acción en cuanto una petición se bloquea.

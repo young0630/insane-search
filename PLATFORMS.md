@@ -68,7 +68,7 @@ The skill is organized as a set of reference files (`skills/insane-search/refere
 
 ## Dependencies
 
-**Required:** Claude Code only.
+**Required:** Python 3.10+ with Chrome installed.
 
 **Auto-installed when needed** (the skill installs these transparently on first use):
 
@@ -81,11 +81,19 @@ pip install yt-dlp       # 1,858 media sites
 **Optional, improves coverage:**
 
 ```bash
-brew install gh                      # GitHub (faster than REST API)
-claude mcp add playwright -- npx @playwright/mcp@latest   # JS-rendered sites
+pip install patchright               # Real Chrome with CDP bypass
+# Firefox fallback built-in (Playwright bundled) — no extra install
 ```
 
 If a dependency is missing, the skill doesn't skip the method — it installs the dependency and tries.
+
+## Fork additions (young0630/insane-search)
+
+This fork adds:
+- **Patchright executor** — Python-first, no Node.js dependency
+- **Firefox fallback** — built-in Playwright Firefox (no CDP surface)
+- **Adversarial Fingerprint Evolution** — per-domain mutation engine
+- **Multi-platform** — works with Hermes, Codex, Claude Code
 
 ## What insane-search is not
 

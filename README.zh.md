@@ -2,11 +2,11 @@
 
 <div align="center">
 
-# insane-search
+# insane-search + Patchright
 
 **Impossible is nothing. 只要是公开页面，insane-search 终会突破。**
 
-为 Claude Code 打造的抗封锁公开页面阅读器。无需 API 密钥，无需代理配置。
+为 **Hermes · Codex · Claude Code** 打造的抗封锁公开页面阅读器。无需 API 密钥，无需代理配置。
 
 <p>
   <a href="https://docs.anthropic.com/en/docs/claude-code"><img src="https://img.shields.io/badge/platform-Claude_Code-D97757?logo=claude" alt="Claude Code"></a>
@@ -26,9 +26,9 @@
 ## ⚡ 安装
 
 ```bash
-/plugin marketplace add https://github.com/fivetaku/gptaku_plugins.git
-/plugin install insane-search@gptaku-plugins
-/reload-plugins
+git clone https://github.com/young0630/insane-search.git
+pip install patchright "curl_cffi>=0.15.0"
+cd insane-search/skills/insane-search && python -m engine "URL"
 ```
 
 无需记任何命令。像平常一样向 Claude Code 提问即可——一旦抓取被拦截，insane-search 就会自动介入。

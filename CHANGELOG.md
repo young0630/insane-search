@@ -1,5 +1,31 @@
 # Changelog
 
+## Fork (young0630/insane-search) — 2026-07-06
+
+### Adversarial Fingerprint Evolution
+- New `engine/fingerprints.py` — per-domain mutation engine
+- Each request: different viewport (±1-3px), language order swap, WebGL vendor variation, DPR fluctuation
+- Successful fingerprints survive and evolve; failed ones discarded
+- Rationale: fixed fingerprint reuse is the single largest detection signal (Sentinel 2026)
+
+### Python Patchright executor
+- `_run_python_patchright()` — headed Chrome via Patchright, no Node.js dependency
+- `--disable-blink-features=AutomationControlled` launch flag (binary-level webdriver removal)
+- Root warmup + cookie bridge for curl_cffi pool seeding
+- Verified: Reddit access where curl_cffi fails with 429/403
+
+### Firefox fallback (built-in Playwright)
+- `_run_python_firefox()` — no CDP surface, different TLS (NSS), different JS engine (SpiderMonkey)
+- Zero extra dependencies — uses Playwright's bundled Firefox
+
+### Multi-platform support
+- Removed Claude Code exclusivity — works with Hermes, Codex, any Python agent
+- Install: `git clone` + `pip install`, not Claude plugin marketplace
+
+---
+
+# Changelog
+
 ## 0.9.1 — 2026-07-02
 
 Activate the Patchright fallback and align the self-learning host key.
