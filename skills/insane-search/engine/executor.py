@@ -29,6 +29,10 @@ from typing import Optional
 from .validators import Verdict, validate
 from .waf_detector import load_profile
 from .fetch_chain import Attempt
+from .fingerprints import FingerprintPool
+
+# Global fingerprint pool — evolves per domain across requests
+FINGERPRINT_POOL = FingerprintPool()
 
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
@@ -94,23 +98,23 @@ def _run_python_patchright(
     t0 = time.time()
     deadline = t0 + timeout
 
+    # Get evolved fingerprint for this domain
+    fp = FINGERPRINT_POOL.get(url)
+
     try:
         with sync_playwright() as p:
             ctx_opts = {
                 "channel": "chrome",
                 "headless": headless,
-                "viewport": None,
+                "viewport": {"width": fp.viewport_width, "height": fp.viewport_height},
+                "device_scale_factor": fp.device_pixel_ratio,
                 "args": ["--disable-blink-features=AutomationControlled"],
             }
             pd = profile_dir or tempfile.mkdtemp(prefix="insane_pw_")
             ctx = p.chromium.launch_persistent_context(pd, **ctx_opts)
             page = ctx.new_page()
 
-            page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => false });
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-            """)
+            page.add_init_script(fp.to_init_script())
 
             try:
                 from urllib.parse import urlparse
@@ -156,8 +160,10 @@ def _run_python_patchright(
                 pass
 
             ctx.close()
+            FINGERPRINT_POOL.record(url, fp, success=True)
             return 0, html, ""
     except Exception as e:
+        FINGERPRINT_POOL.record(url, fp, success=False)
         return 1, "", f"patchright: {type(e).__name__}: {e}"
 
 
