@@ -63,9 +63,9 @@ class Fingerprint:
         )
 
         if random.random() < mutation_rate:
-            # Viewport: ±0-3 pixels
-            fp.viewport_width += random.choice([-2, -1, 0, 0, 1, 2])
-            fp.viewport_height += random.choice([-2, -1, 0, 0, 1, 2])
+            # Viewport: guaranteed ±1-4 pixels
+            fp.viewport_width += random.choice([-3, -2, -1, 1, 2, 3])
+            fp.viewport_height += random.choice([-3, -2, -1, 1, 2, 3])
 
         if random.random() < mutation_rate:
             # Language order swap
